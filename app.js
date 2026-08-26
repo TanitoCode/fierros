@@ -73,6 +73,63 @@
   try{var dr=localStorage.getItem(KEY+".draft"); if(dr) draft=JSON.parse(dr);}catch(e){}
   function saveDraft(){ try{ draft? localStorage.setItem(KEY+".draft",JSON.stringify(draft)) : localStorage.removeItem(KEY+".draft"); }catch(e){} }
 
+  /* ---------------- rest timer ---------------- */
+  var REST_SECONDS_KEY=KEY+".restSeconds", REST_TIMER_KEY=KEY+".restTimer";
+  var restDuration=90;
+  try{var rds=localStorage.getItem(REST_SECONDS_KEY); if(rds) restDuration=Math.max(5,Math.min(600,+rds||90));}catch(e){}
+  function saveRestDuration(){ try{localStorage.setItem(REST_SECONDS_KEY,String(restDuration));}catch(e){} }
+
+  var restTimer=null; // {endsAt, duration, state:"running"|"done"}
+  try{var rt=localStorage.getItem(REST_TIMER_KEY); if(rt){var o=JSON.parse(rt); if(o&&o.state==="running"&&o.endsAt>Date.now()) restTimer=o;}}catch(e){}
+  function saveRestTimer(){ try{ restTimer? localStorage.setItem(REST_TIMER_KEY,JSON.stringify(restTimer)) : localStorage.removeItem(REST_TIMER_KEY); }catch(e){} }
+
+  function startRest(sec){ restTimer={endsAt:Date.now()+sec*1000,duration:sec,state:"running"}; saveRestTimer(); renderRestBar(); }
+  function clearRest(){ if(!restTimer)return; restTimer=null; saveRestTimer(); renderRestBar(); }
+  function skipRest(){ clearRest(); }
+  function bumpRest(delta){
+    if(!restTimer)return;
+    restTimer.endsAt+=delta*1000;
+    if(restTimer.endsAt<=Date.now()) restTimer.endsAt=Date.now()+1000;
+    restTimer.state="running";
+    saveRestTimer(); renderRestBar();
+  }
+  function beep(){
+    try{
+      var Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx)return;
+      var ctx=new Ctx();
+      [0,1].forEach(function(i){
+        var o=ctx.createOscillator(),g=ctx.createGain();
+        o.type="sine"; o.frequency.value=880;
+        o.connect(g); g.connect(ctx.destination);
+        var t=ctx.currentTime+i*0.22;
+        g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.22,t+.02); g.gain.linearRampToValueAtTime(0,t+.18);
+        o.start(t); o.stop(t+.2);
+      });
+      setTimeout(function(){ctx.close();},700);
+    }catch(e){}
+  }
+  function renderRestBar(){
+    var bar=el("restBar"); if(!bar)return;
+    if(!restTimer){ bar.classList.remove("show","done"); return; }
+    var nav=document.querySelector("nav.tabs");
+    bar.style.bottom=(nav?nav.offsetHeight:64)+"px";
+    var remaining=Math.max(0,Math.ceil((restTimer.endsAt-Date.now())/1000));
+    if(restTimer.state==="running" && remaining<=0){
+      restTimer.state="done"; saveRestTimer();
+      beep();
+      if(navigator.vibrate) try{navigator.vibrate([160,80,160]);}catch(e){}
+      toast("¡Descanso terminado! 💪");
+      setTimeout(function(){ if(restTimer && restTimer.state==="done") clearRest(); },5000);
+    }
+    bar.classList.add("show");
+    bar.classList.toggle("done",restTimer.state==="done");
+    var mm=Math.floor(remaining/60),ss=remaining%60;
+    el("restTime").textContent = restTimer.state==="done" ? "¡Listo!" : (mm+":"+(ss<10?"0":"")+ss);
+    var pct = restTimer.state==="done" ? 0 : Math.max(0,Math.min(100, remaining/restTimer.duration*100));
+    el("restCard").style.setProperty("--rest-pct",pct+"%");
+  }
+  setInterval(function(){ if(restTimer) renderRestBar(); },500);
+
   /* ---------------- navigation ---------------- */
   var current="hoy";
   function go(tab){
@@ -139,7 +196,7 @@
 
   function startFree(){
     draft={name:"Entrenamiento libre",date:todayISO(),exercises:[]};
-    saveDraft(); addExercisePrompt();
+    saveDraft(); clearRest(); addExercisePrompt();
   }
   function startFromRoutine(id){
     var r=DB.routines.find(function(x){return x.id===id;}); if(!r)return;
@@ -147,7 +204,7 @@
       var sets=[]; for(var i=0;i<(e.sets||1);i++) sets.push({w:"",r:e.reps||"",done:false});
       return {name:e.name,sets:sets};
     })};
-    saveDraft(); renderHoy();
+    saveDraft(); clearRest(); renderHoy();
   }
 
   function renderActive(v){
@@ -162,6 +219,7 @@
     html+='<div class="row" style="gap:8px;margin-top:12px">';
     html+='<span class="pill accent">'+doneSets+'/'+allSets+' series</span>';
     html+='<span class="pill">'+Math.round(totalVol).toLocaleString("es")+' kg volumen</span>';
+    html+='<button class="pill" data-rest-cfg>⏱ '+restDuration+'s descanso</button>';
     html+='</div>';
 
     draft.exercises.forEach(function(e,ei){
@@ -196,7 +254,9 @@
       row.querySelector(".in-w").addEventListener("input",function(){draft.exercises[ei].sets[si].w=this.value;saveDraft();});
       row.querySelector(".in-r").addEventListener("input",function(){draft.exercises[ei].sets[si].r=this.value;saveDraft();});
       row.querySelector("[data-toggle]").addEventListener("click",function(){
-        var st=draft.exercises[ei].sets[si]; st.done=!st.done; saveDraft(); renderHoy();
+        var st=draft.exercises[ei].sets[si]; st.done=!st.done; saveDraft();
+        if(st.done) startRest(restDuration);
+        renderHoy();
       });
     });
     v.querySelectorAll("[data-addset]").forEach(function(b){b.onclick=function(){
@@ -207,11 +267,18 @@
       draft.exercises.splice(+b.dataset.delex,1); saveDraft(); renderHoy();
     };});
     v.querySelector("[data-addex]").onclick=addExercisePrompt;
+    v.querySelector("[data-rest-cfg]").onclick=function(){
+      modalInput("Descanso entre series (segundos)",String(restDuration),function(val){
+        var n=parseInt(val,10);
+        if(n>0){ restDuration=Math.max(5,Math.min(600,n)); saveRestDuration(); }
+        renderHoy();
+      });
+    };
     v.querySelector("[data-rename]").onclick=function(){
       modalInput("Nombre del entrenamiento",draft.name,function(val){draft.name=val||draft.name;saveDraft();renderHoy();});
     };
     v.querySelector("[data-discard]").onclick=function(){
-      confirmModal("¿Descartar este entrenamiento?","Se perderá lo que cargaste.",function(){draft=null;saveDraft();renderHoy();});
+      confirmModal("¿Descartar este entrenamiento?","Se perderá lo que cargaste.",function(){draft=null;saveDraft();clearRest();renderHoy();});
     };
     v.querySelector("[data-finish]").onclick=finishSession;
   }
@@ -305,7 +372,7 @@
     }).filter(function(e){return e.sets.length;});
     if(!ex.length){toast("Cargá al menos una serie");return;}
     DB.sessions.push({id:uid(),name:draft.name,date:draft.date,exercises:ex});
-    save(); draft=null; saveDraft();
+    save(); draft=null; saveDraft(); clearRest();
     toast("¡Sesión guardada! 💪"); go("hoy");
   }
 
@@ -649,6 +716,11 @@
   }
 
   /* ---------------- boot ---------------- */
+  el("restSkip").onclick=skipRest;
+  el("restMinus").onclick=function(){bumpRest(-15);};
+  el("restPlus").onclick=function(){bumpRest(15);};
+  renderRestBar();
+
   load();
   render();
 })();
