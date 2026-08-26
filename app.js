@@ -56,6 +56,128 @@
     ["Encogimientos con barra","Trapecio"],["Encogimientos con mancuernas","Trapecio"]
   ].map(function(x){return {n:x[0],m:x[1]};});
 
+  /* ---------------- ayuda visual: ¿qué ejercicio es? ---------------- */
+  var DEMO_RULES=[
+    [/talon|pantorrilla|gemelo|encogimiento|trapecio/,"lift","Subí controlado apretando arriba, y bajá despacio sin rebotar."],
+    [/abdominal|plancha|crunch|rueda abdominal|russian twist|elevacion de pierna|rodillas colgado/,"core","Contraé el abdomen y curvá el torso de a poco, sin tirar del cuello."],
+    [/peso muerto|buenos dias|hip thrust|puente de gluteo|patada de gluteo|hiperextension/,"hinge","Empujá la cadera hacia atrás con la espalda neutra, después extendé cadera para volver arriba."],
+    [/sentadilla|prensa|zancada|squat|goblet/,"squat","Bajá flexionando cadera y rodilla con el pecho arriba, después empujá el piso para subir."],
+    [/elevaciones? later|elevaciones? frontal|abductor/,"raise","Elevá el brazo o la pierna hasta la altura indicada, sin impulso, y bajá controlado."],
+    [/dominada|jalon|pull-?over|pull over/,"pullv","Tirá llevando el pecho hacia la barra o la polea, y controlá la bajada."],
+    [/remo|face pull|posterior|pajaro/,"pullh","Tirá el peso hacia el torso apretando los omóplatos, y volvé controlado."],
+    [/press militar|press arnold|press de hombros|press hombros/,"pushv","Empujá el peso por encima de la cabeza sin arquear la espalda, y bajá controlado."],
+    [/curl|extension|press frances|patada de triceps/,"elbow","Movimiento controlado de flexión y extensión en la articulación, sin usar impulso."],
+    [/press|fondos|flexion|pec deck|cruces? en polea|apertura/,"pushh","Empujá el peso alejándolo del cuerpo y controlá la vuelta sin bloquear de golpe."]
+  ];
+  function detectDemo(name){
+    var n=norm(name);
+    for(var i=0;i<DEMO_RULES.length;i++) if(DEMO_RULES[i][0].test(n)) return {pattern:DEMO_RULES[i][1],cue:DEMO_RULES[i][2]};
+    return {pattern:"generic",cue:"Todavía no tenemos una animación para este ejercicio — buscá una referencia en video."};
+  }
+  function demoSvg(pattern){
+    var B='stroke="var(--muted)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"';
+    var A='stroke="var(--accent)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" fill="none"';
+    var inner;
+    if(pattern==="pushh"){ // press banca: figura acostada, barra baja/sube sobre el pecho
+      inner='<line x1="8" y1="70" x2="72" y2="70" stroke="var(--faint)" stroke-width="4" stroke-linecap="round"/>'
+        +'<circle cx="20" cy="61" r="7" '+B+'/>'
+        +'<path d="M27 63 L58 66" '+B+'/>'
+        +'<path d="M58 66 L52 90 M58 66 L70 88" '+B+'/>'
+        +'<g class="demo-anim" style="--from:14px;--to:0px;animation-name:demoSlideV">'
+        +'<line x1="26" y1="26" x2="58" y2="26" '+A+' stroke-width="6.5"/>'
+        +'<circle cx="26" cy="26" r="5" fill="var(--accent)"/><circle cx="58" cy="26" r="5" fill="var(--accent)"/>'
+        +'</g>';
+    } else if(pattern==="pushv"){ // press militar: de pie, barra sube por encima de la cabeza
+      inner='<circle cx="50" cy="20" r="7" '+B+'/>'
+        +'<path d="M50 27 L50 58" '+B+'/>'
+        +'<path d="M50 58 L40 90 M50 58 L60 90" '+B+'/>'
+        +'<g class="demo-anim" style="--from:22px;--to:0px;animation-name:demoSlideV">'
+        +'<line x1="37" y1="10" x2="63" y2="10" '+A+'/>'
+        +'<circle cx="37" cy="10" r="5" fill="var(--accent)"/><circle cx="63" cy="10" r="5" fill="var(--accent)"/>'
+        +'</g>';
+    } else if(pattern==="pullh"){ // remo: torso inclinado hacia adelante, tira una manija hacia el torso
+      inner='<circle cx="26" cy="38" r="7" '+B+'/>'
+        +'<path d="M30 44 L58 74" '+B+'/>'
+        +'<path d="M58 74 L50 94 M58 74 L66 92" '+B+'/>'
+        +'<path d="M30 44 L34 58" '+B+'/>'
+        +'<line x1="34" y1="58" x2="58" y2="58" stroke="var(--border-strong)" stroke-width="2.5" stroke-dasharray="1 7"/>'
+        +'<g class="demo-anim" style="--from:24px;--to:0px;animation-name:demoSlideH">'
+        +'<circle cx="34" cy="58" r="7" fill="var(--accent)"/></g>';
+    } else if(pattern==="pullv"){ // dominadas/jalón: colgado de una barra, el cuerpo sube y baja
+      inner='<line x1="30" y1="14" x2="70" y2="14" stroke="var(--faint)" stroke-width="4" stroke-linecap="round"/>'
+        +'<path d="M34 14 L44 24 M66 14 L56 24" '+B+'/>'
+        +'<g class="demo-anim" style="--from:12px;--to:0px;animation-name:demoSlideV">'
+        +'<circle cx="50" cy="26" r="7" '+B+'/>'
+        +'<path d="M50 33 L50 56" '+B+'/>'
+        +'<path d="M50 56 L42 86 M50 56 L58 86" '+B+'/>'
+        +'</g>';
+    } else if(pattern==="squat"){ // sentadilla: la figura entera baja y sube contra el piso
+      inner='<line x1="12" y1="95" x2="88" y2="95" stroke="var(--border-strong)" stroke-width="2.5" stroke-dasharray="1 7"/>'
+        +'<g class="demo-anim" style="--from:10px;--to:0px;animation-name:demoSlideV">'
+        +'<circle cx="50" cy="18" r="7" '+B+'/>'
+        +'<path d="M50 25 L50 52" '+B+'/>'
+        +'<path d="M50 52 L40 60 L42 82" '+B+'/>'
+        +'<path d="M50 52 L60 60 L58 82" '+B+'/>'
+        +'</g>';
+    } else if(pattern==="hinge"){ // peso muerto: cadera fija, el torso se inclina hacia adelante
+      inner='<path d="M50 58 L40 90 M50 58 L60 90" '+B+'/>'
+        +'<g class="demo-anim" style="--from:0deg;--to:40deg;animation-name:demoRotate" transform-origin="50 58">'
+        +'<line x1="50" y1="58" x2="50" y2="30" '+A+'/>'
+        +'<circle cx="50" cy="26" r="7" fill="var(--accent)"/>'
+        +'</g>';
+    } else if(pattern==="elbow"){ // curl/extensión: de perfil, el antebrazo gira desde el codo
+      inner='<circle cx="34" cy="18" r="7" '+B+'/>'
+        +'<path d="M34 25 L34 55" '+B+'/>'
+        +'<path d="M34 55 L28 90" '+B+'/>'
+        +'<path d="M34 30 L34 50" '+B+'/>'
+        +'<g class="demo-anim" style="--from:0deg;--to:-125deg;animation-name:demoRotate" transform-origin="34 50">'
+        +'<line x1="34" y1="50" x2="34" y2="72" '+A+'/>'
+        +'<circle cx="34" cy="72" r="6" fill="var(--accent)"/>'
+        +'</g>';
+    } else if(pattern==="raise"){ // elevaciones: de frente, el brazo sube hacia el costado
+      inner='<circle cx="50" cy="18" r="7" '+B+'/>'
+        +'<path d="M50 25 L50 55" '+B+'/>'
+        +'<path d="M50 55 L42 90 M50 55 L58 90" '+B+'/>'
+        +'<path d="M50 30 L54 52" '+B+'/>'
+        +'<g class="demo-anim" style="--from:0deg;--to:-80deg;animation-name:demoRotate" transform-origin="38 30">'
+        +'<line x1="38" y1="30" x2="38" y2="54" '+A+'/>'
+        +'<circle cx="38" cy="54" r="6" fill="var(--accent)"/>'
+        +'</g>';
+    } else if(pattern==="core"){ // abdominales: acostado, rodillas flexionadas, el torso se curva hacia arriba
+      inner='<path d="M40 70 L60 56" '+B+'/>'
+        +'<path d="M60 56 L56 84" '+B+'/>'
+        +'<g class="demo-anim" style="--from:0deg;--to:35deg;animation-name:demoRotate" transform-origin="40 70">'
+        +'<line x1="40" y1="70" x2="14" y2="74" '+A+'/>'
+        +'<circle cx="9" cy="74" r="7" fill="var(--accent)"/>'
+        +'</g>';
+    } else if(pattern==="lift"){ // gemelos/encogimientos: la figura entera hace un pulso corto hacia arriba
+      inner='<line x1="20" y1="92" x2="80" y2="92" stroke="var(--border-strong)" stroke-width="2.5" stroke-dasharray="1 7"/>'
+        +'<g class="demo-anim" style="--from:0px;--to:-6px;animation-name:demoSlideV">'
+        +'<circle cx="50" cy="20" r="7" '+B+'/>'
+        +'<path d="M50 27 L50 58" '+B+'/>'
+        +'<path d="M50 58 L42 88 M50 58 L58 88" '+B+'/>'
+        +'<path d="M40 88 L44 88 M56 88 L60 88" stroke="var(--accent)" stroke-width="5.5" stroke-linecap="round"/>'
+        +'</g>';
+    } else {
+      return '<svg viewBox="0 0 24 24" fill="none">'
+        +'<g class="demo-anim-pulse" transform-origin="12 12">'
+        +'<path d="M4 9v6M7 5v14M17 5v14M20 9v6M7 12h10" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"/></g></svg>';
+    }
+    return '<svg viewBox="0 0 100 100" fill="none">'+inner+'</svg>';
+  }
+  function openExerciseDemo(name){
+    var demo=detectDemo(name);
+    var q=encodeURIComponent(name+" tecnica ejercicio");
+    var html='<div class="grab"></div><h3>'+esc(name)+'</h3>';
+    html+='<div class="muted" style="margin-top:-8px;margin-bottom:2px;font-size:13px">'+esc(findMuscle(name))+'</div>';
+    html+='<div class="demo-wrap">'+demoSvg(demo.pattern)+'</div>';
+    html+='<div class="demo-cue"><b>Cómo hacerlo</b>'+esc(demo.cue)+'</div>';
+    html+='<a class="demo-video" href="https://www.youtube.com/results?search_query='+q+'" target="_blank" rel="noopener noreferrer">'
+      +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'
+      +'Buscar video de referencia</a>';
+    openModal(html);
+  }
+
   function allExercises(){
     var map={};
     CATALOG.forEach(function(x){map[norm(x.n)]={n:x.n,m:x.m};});
@@ -224,7 +346,8 @@
 
     draft.exercises.forEach(function(e,ei){
       html+='<div class="exercise">';
-      html+='<header><span class="name">'+esc(e.name)+'</span>'
+      html+='<header><div style="flex:1;min-width:0"><span class="name">'+esc(e.name)+'</span>'
+        +'<button class="ex-help" data-exhelp="'+ei+'">¿No sabés qué ejercicio es?</button></div>'
         +'<button class="del-x" data-delex="'+ei+'">✕</button></header>';
       html+='<div class="sets">';
       html+='<div class="set-head"><div>#</div><div>KG</div><div>REPS</div><div></div></div>';
@@ -265,6 +388,9 @@
     };});
     v.querySelectorAll("[data-delex]").forEach(function(b){b.onclick=function(){
       draft.exercises.splice(+b.dataset.delex,1); saveDraft(); renderHoy();
+    };});
+    v.querySelectorAll("[data-exhelp]").forEach(function(b){b.onclick=function(){
+      openExerciseDemo(draft.exercises[+b.dataset.exhelp].name);
     };});
     v.querySelector("[data-addex]").onclick=addExercisePrompt;
     v.querySelector("[data-rest-cfg]").onclick=function(){
