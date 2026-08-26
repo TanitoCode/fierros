@@ -1,5 +1,5 @@
 /* Fierros — service worker (app shell offline) */
-const CACHE = "fierros-v1";
+const CACHE = "fierros-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -30,17 +30,15 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
 
-  // Same-origin app shell: cache-first, then network (and cache the result).
+  // Same-origin app shell: network-first (so pushes se reflejan al reabrir con
+  // internet), con la caché como respaldo offline.
   if (url.origin === self.location.origin) {
     e.respondWith(
-      caches.match(req).then((hit) =>
-        hit ||
-        fetch(req).then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-          return res;
-        }).catch(() => caches.match("./index.html"))
-      )
+      fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match(req).then((hit) => hit || caches.match("./index.html")))
     );
     return;
   }

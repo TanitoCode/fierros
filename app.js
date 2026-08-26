@@ -3,9 +3,9 @@
 
   /* ---------------- storage ---------------- */
   var KEY="fierros.v1";
-  var DB={routines:[],sessions:[],body:[]};
+  var DB={routines:[],sessions:[],body:[],customExercises:[]};
   function load(){
-    try{var raw=localStorage.getItem(KEY); if(raw){var d=JSON.parse(raw); DB.routines=d.routines||[]; DB.sessions=d.sessions||[]; DB.body=d.body||[];}}
+    try{var raw=localStorage.getItem(KEY); if(raw){var d=JSON.parse(raw); DB.routines=d.routines||[]; DB.sessions=d.sessions||[]; DB.body=d.body||[]; DB.customExercises=d.customExercises||[];}}
     catch(e){}
     if(!DB.routines.length && !DB.sessions.length && !DB.body.length) seed();
   }
@@ -37,6 +37,36 @@
   function el(id){return document.getElementById(id);}
 
   function toast(msg){var t=el("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("show");},1900);}
+  function norm(s){return String(s==null?"":s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");}
+
+  /* ---------------- catálogo de ejercicios por grupo muscular ---------------- */
+  var MUSCLES=["Pecho","Espalda","Hombros","Bíceps","Tríceps","Cuádriceps","Femorales","Glúteos","Pantorrillas","Abdominales","Antebrazos","Trapecio"];
+  var CATALOG=[
+    ["Press de banca","Pecho"],["Press inclinado con barra","Pecho"],["Press inclinado con mancuernas","Pecho"],["Press plano con mancuernas","Pecho"],["Press declinado","Pecho"],["Aperturas con mancuernas","Pecho"],["Cruces en polea","Pecho"],["Pec deck (contractora)","Pecho"],["Fondos en paralelas","Pecho"],["Flexiones de brazos","Pecho"],["Press de pecho en máquina","Pecho"],["Pullover con mancuerna","Pecho"],
+    ["Dominadas","Espalda"],["Jalón al pecho","Espalda"],["Jalón agarre cerrado","Espalda"],["Remo con barra","Espalda"],["Remo con mancuerna","Espalda"],["Remo en T (T-bar)","Espalda"],["Remo en polea baja","Espalda"],["Remo en máquina","Espalda"],["Pull-over en polea","Espalda"],["Peso muerto","Espalda"],["Hiperextensiones (lumbares)","Espalda"],["Remo invertido","Espalda"],
+    ["Press militar con barra","Hombros"],["Press militar con mancuernas","Hombros"],["Press Arnold","Hombros"],["Elevaciones laterales","Hombros"],["Elevaciones frontales","Hombros"],["Elevaciones posteriores (pájaros)","Hombros"],["Face pull","Hombros"],["Remo al mentón","Hombros"],["Press de hombros en máquina","Hombros"],
+    ["Curl con barra","Bíceps"],["Curl con mancuernas","Bíceps"],["Curl martillo","Bíceps"],["Curl predicador (Scott)","Bíceps"],["Curl inclinado","Bíceps"],["Curl concentrado","Bíceps"],["Curl en polea","Bíceps"],["Curl araña","Bíceps"],
+    ["Extensión en polea (soga)","Tríceps"],["Extensión en polea (barra)","Tríceps"],["Press francés","Tríceps"],["Patada de tríceps","Tríceps"],["Fondos en banco","Tríceps"],["Press cerrado","Tríceps"],["Extensión sobre la cabeza","Tríceps"],
+    ["Sentadilla","Cuádriceps"],["Sentadilla frontal","Cuádriceps"],["Prensa de piernas","Cuádriceps"],["Extensión de cuádriceps","Cuádriceps"],["Zancadas","Cuádriceps"],["Sentadilla búlgara","Cuádriceps"],["Hack squat","Cuádriceps"],["Sentadilla goblet","Cuádriceps"],
+    ["Peso muerto rumano","Femorales"],["Curl femoral tumbado","Femorales"],["Curl femoral sentado","Femorales"],["Peso muerto piernas rígidas","Femorales"],["Buenos días (good morning)","Femorales"],
+    ["Hip thrust (empuje de cadera)","Glúteos"],["Puente de glúteos","Glúteos"],["Patada de glúteo en polea","Glúteos"],["Abductores en máquina","Glúteos"],
+    ["Elevación de talones de pie","Pantorrillas"],["Elevación de talones sentado","Pantorrillas"],["Elevación de talones en prensa","Pantorrillas"],
+    ["Crunch abdominal","Abdominales"],["Elevación de piernas","Abdominales"],["Plancha","Abdominales"],["Rueda abdominal","Abdominales"],["Crunch en polea","Abdominales"],["Russian twist","Abdominales"],["Elevación de rodillas colgado","Abdominales"],
+    ["Curl de muñeca","Antebrazos"],["Curl de muñeca invertido","Antebrazos"],["Caminata del granjero","Antebrazos"],
+    ["Encogimientos con barra","Trapecio"],["Encogimientos con mancuernas","Trapecio"]
+  ].map(function(x){return {n:x[0],m:x[1]};});
+
+  function allExercises(){
+    var map={};
+    CATALOG.forEach(function(x){map[norm(x.n)]={n:x.n,m:x.m};});
+    (DB.customExercises||[]).forEach(function(x){var n=x.n||x.name; if(n)map[norm(n)]={n:n,m:x.m||"Otro"};});
+    return Object.keys(map).map(function(k){return map[k];});
+  }
+  function findMuscle(name){
+    var k=norm(name),all=allExercises();
+    for(var i=0;i<all.length;i++) if(norm(all[i].n)===k) return all[i].m;
+    return "Otro";
+  }
 
   /* ---------------- draft (active workout) ---------------- */
   var draft=null; // {name, date, exercises:[{name, sets:[{w,r,done}]}]}
@@ -186,31 +216,86 @@
     v.querySelector("[data-finish]").onclick=finishSession;
   }
 
+  function addExercise(name){
+    name=String(name==null?"":name).trim(); if(!name)return;
+    if(!draft){draft={name:"Entrenamiento libre",date:todayISO(),exercises:[]};}
+    draft.exercises.push({name:name,sets:[{w:"",r:"",done:false},{w:"",r:"",done:false},{w:"",r:"",done:false}]});
+    saveDraft(); closeModal(); renderHoy();
+  }
+
   function addExercisePrompt(){
-    // suggestions from routines + past sessions
-    var names={};
-    DB.routines.forEach(function(r){r.exercises.forEach(function(e){names[e.name]=1;});});
-    DB.sessions.forEach(function(s){(s.exercises||[]).forEach(function(e){names[e.name]=1;});});
-    var list=Object.keys(names).sort();
+    var query="",activeMuscle=null;
+    var freq={}; DB.sessions.forEach(function(s){(s.exercises||[]).forEach(function(e){freq[e.name]=(freq[e.name]||0)+1;});});
+
     var html='<div class="grab"></div><h3>Agregar ejercicio</h3>';
-    html+='<label class="field"><span>Nombre</span><input type="text" id="exName" placeholder="Ej: Press banca" autocomplete="off"></label>';
-    if(list.length){
-      html+='<div class="muted" style="font-size:12px;margin-bottom:8px">Frecuentes</div><div class="row wrap" style="gap:8px;margin-bottom:16px">';
-      list.slice(0,16).forEach(function(n){html+='<button class="chip" data-pick="'+esc(n)+'">'+esc(n)+'</button>';});
-      html+='</div>';
-    }
-    html+='<button class="btn primary" id="exAdd">Agregar</button>';
+    html+='<div class="ex-top">';
+    html+='<input type="text" id="exSearch" placeholder="Buscá músculo o nombre (ej: pecho, press...)" autocomplete="off" autocapitalize="none">';
+    html+='<div class="row wrap" id="muscleChips" style="gap:7px;margin:12px 0 4px"></div>';
+    html+='</div>';
+    html+='<div id="exResults"></div>';
     openModal(html);
-    var input=el("exName"); setTimeout(function(){input.focus();},80);
-    function add(name){
-      name=(name||input.value).trim(); if(!name)return;
-      if(!draft){draft={name:"Entrenamiento libre",date:todayISO(),exercises:[]};}
-      draft.exercises.push({name:name,sets:[{w:"",r:"",done:false},{w:"",r:"",done:false},{w:"",r:"",done:false}]});
-      saveDraft(); closeModal(); renderHoy();
+
+    function renderChips(){
+      var c=el("muscleChips");
+      var h='<button class="chip'+(!activeMuscle?' on':'')+'" data-m="">Todos</button>';
+      MUSCLES.forEach(function(m){h+='<button class="chip'+(activeMuscle===m?' on':'')+'" data-m="'+esc(m)+'">'+esc(m)+'</button>';});
+      c.innerHTML=h;
+      c.querySelectorAll("[data-m]").forEach(function(b){b.onclick=function(){activeMuscle=b.dataset.m||null;renderChips();renderResults();};});
     }
-    el("exAdd").onclick=function(){add();};
-    input.addEventListener("keydown",function(e){if(e.key==="Enter")add();});
-    el("modal").querySelectorAll("[data-pick]").forEach(function(b){b.onclick=function(){add(b.dataset.pick);};});
+
+    function chipRow(items){
+      var h='<div class="row wrap" style="gap:8px;margin-bottom:10px">';
+      items.forEach(function(n){h+='<button class="chip" data-add="'+esc(n)+'">'+esc(n)+'</button>';});
+      return h+'</div>';
+    }
+
+    function renderResults(){
+      var q=norm(query),all=allExercises(),out="";
+      if(!q && !activeMuscle){
+        var top=Object.keys(freq).sort(function(a,b){return freq[b]-freq[a];}).slice(0,10);
+        if(top.length){ out+='<div class="cat-h">Frecuentes</div>'+chipRow(top); }
+        out+='<div class="empty" style="margin-top:4px;font-size:13px">Tocá un grupo muscular arriba, o escribí para buscar (ej: <b>pecho</b>, <b>espalda</b>, <b>press</b>).</div>';
+      }else{
+        var matches=all.filter(function(x){
+          if(activeMuscle && x.m!==activeMuscle) return false;
+          if(!q) return true;
+          return norm(x.n).indexOf(q)>=0 || norm(x.m).indexOf(q)>=0;
+        });
+        var groups={}; matches.forEach(function(x){(groups[x.m]=groups[x.m]||[]).push(x);});
+        MUSCLES.concat(["Otro"]).forEach(function(m){
+          var g=groups[m]; if(!g||!g.length) return;
+          g.sort(function(a,b){return a.n<b.n?-1:1;});
+          out+='<div class="cat-h">'+esc(m)+' <span class="muted" style="font-weight:500">'+g.length+'</span></div>'+chipRow(g.map(function(x){return x.n;}));
+        });
+        if(!matches.length) out+='<div class="empty" style="margin-top:6px;font-size:13px">Sin resultados en el catálogo.</div>';
+        var exact=q && all.some(function(x){return norm(x.n)===q;});
+        if(query.trim() && !exact){
+          out+='<div class="cat-h">Agregar nuevo</div>';
+          out+='<p class="muted" style="font-size:13px;margin:0 0 8px">Elegí el músculo para "<b>'+esc(query.trim())+'</b>":</p>';
+          out+='<div class="row wrap" style="gap:7px">';
+          MUSCLES.concat(["Otro"]).forEach(function(m){out+='<button class="chip" data-new="'+esc(m)+'">'+esc(m)+'</button>';});
+          out+='</div>';
+        }
+      }
+      var box=el("exResults"); box.innerHTML=out;
+      box.querySelectorAll("[data-add]").forEach(function(b){b.onclick=function(){addExercise(b.dataset.add);};});
+      box.querySelectorAll("[data-new]").forEach(function(b){b.onclick=function(){
+        var name=query.trim(); if(!name)return;
+        if(!allExercises().some(function(x){return norm(x.n)===norm(name);})){ DB.customExercises.push({n:name,m:b.dataset.new}); save(); }
+        addExercise(name);
+      };});
+    }
+
+    var input=el("exSearch"); setTimeout(function(){input.focus();},80);
+    input.addEventListener("input",function(){query=this.value;renderResults();});
+    input.addEventListener("keydown",function(e){
+      if(e.key!=="Enter")return;
+      var q=norm(query),all=allExercises();
+      var hit=all.filter(function(x){return norm(x.n)===q;})[0] ||
+              all.filter(function(x){return q&&(norm(x.n).indexOf(q)>=0||norm(x.m).indexOf(q)>=0)&&(!activeMuscle||x.m===activeMuscle);})[0];
+      if(hit) addExercise(hit.n);
+    });
+    renderChips(); renderResults();
   }
 
   function finishSession(){
