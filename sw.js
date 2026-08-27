@@ -1,5 +1,5 @@
 /* Fierros — service worker (app shell offline) */
-const CACHE = "fierros-v2";
+const CACHE = "fierros-v3";
 const ASSETS = [
   "./",
   "./index.html",

@@ -350,7 +350,7 @@
         +'<button class="ex-help" data-exhelp="'+ei+'">¿No sabés qué ejercicio es?</button></div>'
         +'<button class="del-x" data-delex="'+ei+'">✕</button></header>';
       html+='<div class="sets">';
-      html+='<div class="set-head"><div>#</div><div>KG</div><div>REPS</div><div></div></div>';
+      html+='<div class="set-head"><div>#</div><div>KG</div><div>REPS</div><div></div><div></div></div>';
       e.sets.forEach(function(s,si){
         html+='<div class="set-row'+(s.done?' done':'')+'" data-ei="'+ei+'" data-si="'+si+'">'
           +'<div class="idx">'+(si+1)+'</div>'
@@ -358,7 +358,9 @@
           +'<input type="number" inputmode="numeric" class="in-r" value="'+esc(s.r)+'" placeholder="—">'
           +'<button class="chk'+(s.done?' on':'')+'" data-toggle aria-label="Serie hecha">'
           +'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>'
-          +'</button></div>';
+          +'</button>'
+          +'<button class="x-set" data-delset aria-label="Eliminar serie">✕</button>'
+          +'</div>';
       });
       html+='<button class="btn ghost sm" data-addset="'+ei+'" style="margin-top:8px">＋ Serie</button>';
       html+='</div></div>';
@@ -380,6 +382,16 @@
         var st=draft.exercises[ei].sets[si]; st.done=!st.done; saveDraft();
         if(st.done) startRest(restDuration);
         renderHoy();
+      });
+      row.querySelector("[data-delset]").addEventListener("click",function(){
+        var st=draft.exercises[ei].sets[si];
+        var hasData=st.done||(st.w!==""&&st.w!=null)||(st.r!==""&&st.r!=null);
+        function drop(){ draft.exercises[ei].sets.splice(si,1); saveDraft(); renderHoy(); }
+        if(hasData){
+          confirmModal("¿Eliminar la serie "+(si+1)+"?","Se perderán los datos cargados.",drop);
+        }else{
+          drop();
+        }
       });
     });
     v.querySelectorAll("[data-addset]").forEach(function(b){b.onclick=function(){
