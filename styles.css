@@ -194,6 +194,16 @@
   .x-set{background:none;border:none;color:var(--faint);font-size:16px;line-height:1;padding:0;place-self:center}
   .x-set:active{color:var(--accent)}
 
+  /* Ejercicios por tiempo / cardio */
+  .set-head.t-time,.set-row.t-time{grid-template-columns:30px 1fr 44px 44px 26px}
+  .set-head.t-timero,.set-row.t-timero{grid-template-columns:30px 1fr}
+  .set-head.t-cardioro,.set-row.t-cardioro{grid-template-columns:30px 1fr 1fr 1fr}
+  .tmr-btn{
+    width:44px;height:42px;border-radius:11px;border:1px solid var(--border-strong);
+    background:var(--surface-2);color:var(--muted);display:grid;place-items:center;
+  }
+  .tmr-btn:active{transform:scale(.94);color:var(--accent)}
+
   .pill{
     display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
     padding:5px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);
@@ -315,6 +325,11 @@
   color:var(--text);font-weight:700;font-size:12.5px;padding:8px 10px;white-space:nowrap;
 }
 .rest-btn:active{transform:scale(.95)}
+.rest-btn[hidden]{display:none}
+/* Cronómetro de ejercicio (misma barra, acento distinto) */
+.rest-bar.work .rest-card{border-color:var(--accent)}
+.rest-bar.work .rest-label{color:var(--accent)}
+.rest-bar.work .rest-card::before{background:var(--surface-2)}
 
 /* Buscador de ejercicios por músculo */
 .cat-h{font-family:"Oswald",sans-serif;text-transform:uppercase;letter-spacing:.08em;font-size:13px;color:var(--muted);font-weight:600;margin:14px 2px 8px}

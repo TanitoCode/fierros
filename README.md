@@ -10,8 +10,10 @@ y anda **sin internet**. Los datos se guardan en tu dispositivo (no hay servidor
 ## Características
 
 - **Hoy** — inicia un entreno desde una rutina o libre; carga cada ejercicio con sus series (kg/reps), marca las hechas y guarda la sesión. Historial con volumen total.
-- **Rutinas** — crea y edita tus días de entreno (Push/Pull/Legs, etc.) con series×reps objetivo.
-- **Progreso** — gráficas de peso máximo y 1RM estimado (fórmula de Epley) por ejercicio, más tus PRs.
+- **Ejercicios por tiempo y cardio** — plancha, wall sit, cinta, bici, elíptica, escaladora… con cronómetro integrado (cuenta arriba o regresiva) y campos de minutos/km.
+- **Timer de descanso** configurable entre series, con aviso sonoro y vibración.
+- **Rutinas** — crea y edita tus días de entreno (Push/Pull/Legs, etc.) con series×reps, segundos o min/km objetivo.
+- **Progreso** — gráficas y PRs por ejercicio: peso máximo y 1RM estimado (Epley) en fuerza; mejor tiempo en isométricos; distancia, ritmo y km totales en cardio.
 - **Cuerpo** — registra peso corporal y medidas (brazo, cintura, pecho…) y observa la evolución.
 - **Respaldo** — exporta/importa tus datos en un archivo `.json` para tener copia o pasarlos a otro dispositivo.
 - Tema claro/oscuro y diseño mobile-first.
@@ -63,7 +65,9 @@ fierros/
 
 ## Roadmap (ideas)
 
-- [ ] Temporizador de descanso entre series
+- [x] Temporizador de descanso entre series
+- [x] Ejercicios por tiempo (isométricos) y de cardio, con cronómetro
+- [ ] Peso + tiempo, calorías / nivel de resistencia en cardio (Etapa 3)
 - [ ] RPE y notas por serie/ejercicio
 - [ ] Superseries
 - [ ] Sincronización entre dispositivos

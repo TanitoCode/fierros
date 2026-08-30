@@ -34,12 +34,25 @@ icons/                # íconos de la app
   la maneja `go(tab)` y el router mínimo `render()`.
 - Render por strings de HTML + `innerHTML`, y luego se cablean los eventos con
   `querySelectorAll(...).onclick`. No hay virtual DOM.
-- **Entreno en curso:** variable `draft = {name, date, exercises:[{name, sets:[{w,r,done}]}]}`.
-- **Catálogo de ejercicios:** `CATALOG` (array de `{n:nombre, m:músculo}`) + `MUSCLES`
-  (orden de grupos). `allExercises()` combina catálogo + `DB.customExercises`.
-  `findMuscle(nombre)` devuelve el grupo muscular. `norm(s)` normaliza texto (minúsculas
-  sin acentos) para las búsquedas.
-- **Modelo de sesión guardada:** `{id, name, date, exercises:[{name, sets:[{w, r}]}]}`.
+- **Entreno en curso:** variable `draft = {name, date, exercises:[{name, t, sets:[...]}]}`.
+  Cada ejercicio del draft lleva `t` (tipo). Forma de cada serie según `t`:
+  `wr` → `{w,r,done}` · `time` → `{sec,done}` · `cardio` → `{sec,dist,done}` (`sec` en
+  segundos, `dist` en km).
+- **Tipos de ejercicio (`t`):** `"wr"` peso+reps (default, se omite) · `"time"` isométricos
+  y sostenidos por tiempo (plancha, wall sit, dead hang…) · `"cardio"` máquinas de cardio
+  (cinta, bici, elíptica, escaladora, remo…), campos min+km.
+- **Catálogo de ejercicios:** `CATALOG` (array de `{n:nombre, m:músculo, t:tipo}`) + `MUSCLES`
+  (orden de grupos; incluye `"Cardio"`). `allExercises()` combina catálogo + `DB.customExercises`.
+  `findMuscle(nombre)` devuelve el grupo muscular; `findType(nombre)` el tipo (`wr` por
+  defecto). `newSet(t, proto)` crea una serie vacía de la forma correcta. `norm(s)` normaliza
+  texto (minúsculas sin acentos) para las búsquedas.
+- **Modelo de sesión guardada:** `{id, name, date, exercises:[{name, t?, sets:[...]}]}`.
+  `wr` (sin `t`): `sets:[{w,r}]` · `time`: `t:"time"`, `sets:[{sec}]` · `cardio`:
+  `t:"cardio"`, `sets:[{sec,dist}]`. Leer siempre como `e.t || "wr"` (retrocompatible).
+- **Cronómetro de ejercicio (tipo `time`):** reusa la barra flotante del descanso.
+  `restTimer.kind` distingue `"rest"` de `"work"`; en `work`, `mode:"down"` (cuenta regresiva
+  desde el objetivo en `sec`, pita al llegar a 0) o `"up"` (cuenta hacia arriba, se guarda al
+  tocar "Guardar"). Al terminar escribe los segundos en la serie y arranca el descanso.
 - **Cuerpo:** `{id, date, weight, measures:{Brazo, Cintura, ...}}`.
 - **1RM estimado:** fórmula de Epley → `epley(w,r) = w * (1 + r/30)`.
 - Helpers útiles ya existentes: `uid()`, `todayISO()`, `parseISO()`, `fmtLong()`,
@@ -79,13 +92,17 @@ icons/                # íconos de la app
 
 ## Roadmap / ideas (a implementar cuando se pida)
 
-- Temporizador de descanso entre series (al marcar una serie hecha).
+- **Ejercicios sin peso — Etapa 3:** peso + tiempo (plancha con disco, caminata del granjero
+  con mancuernas), calorías / nivel de resistencia / FC en cardio, ritmo objetivo, y
+  buscador del catálogo dentro del editor de rutinas para elegir tipo `time`/`cardio`.
+  (Etapa 1 y 2 ya hechas: tipos `time` y `cardio`, cronómetro cuenta arriba/abajo,
+  grupo "Cardio", progreso por tipo.)
 - RPE (esfuerzo percibido 1-10) y notas por serie/ejercicio.
 - Usar el catálogo de ejercicios también al armar rutinas (hoy el editor de rutinas usa
-  texto libre).
+  texto libre; ya infiere el tipo con `findType`).
 - Estadísticas de progreso por grupo muscular (ya se puede con `findMuscle`).
 - Sincronización entre dispositivos (hoy los datos viven por dispositivo; se mueven con
-  el respaldo JSON del botón ⬇).
+  el respaldo JSON del botón ⬇ — que ahora incluye `customExercises`).
 - Superseries; a futuro empaquetar como app nativa para Google Play (Capacitor / TWA).
 
 ## Reglas para el asistente
