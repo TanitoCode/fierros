@@ -53,14 +53,31 @@ icons/                # íconos de la app
   `restTimer.kind` distingue `"rest"` de `"work"`; en `work`, `mode:"down"` (cuenta regresiva
   desde el objetivo en `sec`, pita al llegar a 0) o `"up"` (cuenta hacia arriba, se guarda al
   tocar "Guardar"). Al terminar escribe los segundos en la serie y arranca el descanso.
+  Funciones: `startWorkTimer(ei,si)`, `finishWorkTimer(keep)`, `syncRestControls()` (relabela
+  los 3 botones de la barra según kind/mode). La barra viene de `index.html` (`#restLabel`,
+  `#restMinus/#restPlus/#restSkip`, `#restTime`, `#restCard`).
+- **Render por tipo (`t`):** `renderActive()` (entreno en curso), `openSession()` (detalle
+  guardado), `renderProgreso()` y la línea del historial de `renderHoy()` ramifican según
+  `e.t || "wr"`. Progreso `time` = mejor tiempo / mejor sesión / acumulado; `cardio` =
+  distancia máx / mejor ritmo (min/km) / sesión más larga / km totales. Sin 1RM ni
+  volumen kg para `time`/`cardio`. `progExType(nombre)` resuelve el tipo mirando las
+  sesiones guardadas (fallback a `findType`).
+- **Rutinas por tipo:** cada ejercicio de rutina puede llevar `t` + objetivo: `wr` usa
+  `{sets, reps}`, `time` usa `{sets, secs}`, `cardio` usa `{mins, dist}` (1 set). El editor
+  infiere `t` con `findType(nombre)` al agregar. `startFromRoutine()` arma el `draft` con la
+  forma de serie correcta.
 - **Cuerpo:** `{id, date, weight, measures:{Brazo, Cintura, ...}}`.
 - **1RM estimado:** fórmula de Epley → `epley(w,r) = w * (1 + r/30)`.
 - Helpers útiles ya existentes: `uid()`, `todayISO()`, `parseISO()`, `fmtLong()`,
   `fmtShort()`, `esc()` (escapar HTML — usarlo siempre con texto del usuario),
   `el(id)`, `toast(msg)`, y el modal (`openModal`, `closeModal`, `modalInput`,
   `confirmModal`).
-- **Gráficas:** `drawChart(container, data, unit)` dibuja un line chart en SVG inline,
-  con colores por tokens CSS (se adapta al tema).
+- **Helpers de tiempo / distancia:** `fmtDur(sec)` → `"m:ss"` · `parseDur(str)` acepta
+  `"90"` o `"1:30"` y devuelve segundos · `secToMin(sec)` → minutos (inputs de cardio) ·
+  `trimNum(n)` recorta a 2 decimales · `fmtPace(sec, km)` → `"m:ss/km"`.
+- **Gráficas:** `drawChart(container, data, unit, fmtY?)` dibuja un line chart en SVG inline,
+  con colores por tokens CSS (se adapta al tema). `fmtY` (opcional) formatea etiquetas del
+  eje Y y la etiqueta final; se pasa `fmtDur` para gráficas de tiempo y de ritmo.
 
 ## Convenciones de estilo
 
@@ -73,6 +90,10 @@ icons/                # íconos de la app
 - Acento visual = rojo (inspirado en el código de colores de discos olímpicos).
 - Tap targets grandes (es mobile-first). Cuidar accesibilidad básica (`aria-label` en
   botones de solo ícono, foco visible).
+- **Filas de series por tipo** (en `styles.css`): `.set-row.t-time` (grid con el botón
+  cronómetro `.tmr-btn`), `.set-row.t-timero` / `.t-cardioro` (solo lectura, en el detalle
+  de sesión). `.rest-bar.work` = barra en modo cronómetro (borde de acento). Cada variante
+  define su `grid-template-columns` explícito; si agregás otra, seguí ese patrón.
 
 ## Cómo correr y probar
 
@@ -85,10 +106,12 @@ icons/                # íconos de la app
 
 ## Deploy (GitHub Pages)
 
-- `git add . && git commit -m "..." && git push` a la rama `main`. Pages redeploya solo.
+- Repo: `github.com/TanitoCode/fierros` (rama `main`).
+- `git add . && git commit -m "..." && git push` a la rama `main`. Pages redeploya solo
+  (~1-2 min) → https://tanitocode.github.io/fierros/
 - **El service worker es network-first para archivos propios**, con caché como respaldo
   offline. Si cambiás assets (CSS/JS/íconos), **subí el número de `CACHE` en `sw.js`**
-  (`fierros-v2` → `fierros-v3`, etc.) para forzar la actualización.
+  (actual: `fierros-v4`; `v4` → `v5`, etc.) para forzar la actualización.
 
 ## Roadmap / ideas (a implementar cuando se pida)
 
