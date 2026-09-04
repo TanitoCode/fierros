@@ -130,6 +130,14 @@ icons/                # íconos de la app
 
 ## Reglas para el asistente
 
+- **Se trabaja desde varias máquinas** (esta y otras, sin coordinación entre sesiones).
+  Al arrancar a trabajar en este repo, correr `git fetch` + `git status` antes de asumir
+  que está al día — puede haber commits remotos sin traer, o cambios locales sin commitear
+  de una sesión anterior en esta misma máquina. Si hay commits remotos nuevos, traerlos
+  (`git pull --ff-only`; si hay cambios locales sin commitear, `git stash` antes y
+  `git stash pop` después, resolviendo a mano cualquier conflicto). Repetir el mismo
+  chequeo (`git fetch` + `git status`) después de cada tanda de cambios, justo antes de
+  commitear y pushear, para no pisar trabajo hecho en otra máquina mientras tanto.
 - Preservá la simpleza: vanilla JS, sin dependencias nuevas salvo pedido explícito.
 - No rompas el formato de datos guardado en `localStorage` sin migración (la gente ya
   tiene datos cargados). Si cambia el modelo, migrar dentro de `load()`.
